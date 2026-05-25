@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hermes Dashboard</title>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f5f7fb;
+    color:#111827;
+    padding:25px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    margin:15px 0;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+input, button{
+    padding:10px;
+    margin:5px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:16px;
+}
+
+button{
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+    border:none;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th, td{
+    padding:10px;
+    border-bottom:1px solid #ddd;
+    text-align:center;
+}
+
+h2{
+    font-size:32px;
+}
+
+h3{
+    font-size:24px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>📊 Hermes Dashboard</h2>
+
+<!-- ================= STUDENT LOOKUP ================= -->
+<div class="card">
+<h3>👤 Student Profile</h3>
+
+<input id="studentName" placeholder="Enter student name">
+<button onclick="loadStudent()">Load</button>
+
+<div id="studentBox"></div>
+</div>
+
+<!-- ================= LEADERBOARD ================= -->
+<div class="card">
+<h3>🏁 Leaderboard</h3>
+<button onclick="loadLeaderboard()">Refresh</button>
+
+<div id="leaderboard"></div>
+</div>
+
+<script>
+
+// ================= LOAD STUDENT =================
+async function loadStudent(){
+
+let name = document.getElementById("studentName").value;
+
+if(!name) return;
+
+let res = await fetch(`/student/${name}`);
+let data = await res.json();
+
+let html = `
+<b>Score:</b> ${data.score || 0}<br>
+<b>Streak:</b> ${data.streak || 0}<br>
+<b>Total Attempts:</b> ${data.attempts.length}<br>
+<br>
+<h4>📜 Attempts History</h4>
+`;
+
+data.attempts.slice(-5).reverse().forEach(a=>{
+    html += `
+    <div class="card">
+        Topic: ${a.topic}<br>
+        Decimal: ${a.decimal || a.correct_answer}<br>
+    </div>
+    `;
+});
+
+document.getElementById("studentBox").innerHTML = html;
+
+}
+
+// ================= LOAD LEADERBOARD =================
+async function loadLeaderboard(){
+
+let res = await fetch("/leaderboard");
+let data = await res.json();
+
+let html = `
+<table>
+<tr>
+<th>Student</th>
+<th>Score</th>
+<th>Streak</th>
+<th>Attempts</th>
+</tr>
+`;
+
+data.forEach(s=>{
+    html += `
+    <tr>
+        <td>${s.student}</td>
+        <td>${s.score}</td>
+        <td>${s.streak}</td>
+        <td>${s.attempts}</td>
+    </tr>
+    `;
+});
+
+html += `</table>`;
+
+document.getElementById("leaderboard").innerHTML = html;
+
+}
+
+</script>
+
+</body>
+</html>

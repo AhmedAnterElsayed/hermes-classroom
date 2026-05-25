@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hermes Classroom Engine</title>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f5f7fb;
+    color:#111827;
+    padding:25px;
+    font-size: 22px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    margin:15px 0;
+    border-radius:12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+input{
+    padding:12px;
+    margin:8px;
+    border-radius:10px;
+    border:1px solid #ccc;
+    font-size:18px;
+}
+
+button{
+    padding:12px 18px;
+    margin:8px;
+    border-radius:10px;
+    border:none;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+    font-size:18px;
+}
+
+.step{
+    font-size:26px;
+    margin:8px 0;
+    font-weight:bold;
+}
+
+.green{color:#16a34a;}
+.red{color:#dc2626;}
+.blue{color:#2563eb;}
+.yellow{color:#ca8a04;}
+
+h2{font-size:34px;}
+h3{font-size:28px;}
+</style>
+
+</head>
+
+<body>
+
+<h2>🧠 Hermes Classroom Engine</h2>
+
+<input id="topic" placeholder="Fraction e.g. 5/16">
+<input id="student" placeholder="Student name">
+
+<button onclick="ask()">Solve</button>
+<button onclick="resetUI()">Reset</button>
+
+<div id="out"></div>
+
+<!-- ================= QUIZ ================= -->
+<div class="card">
+<h3>❓ Quiz Mode</h3>
+
+<input id="quizTopic" placeholder="e.g. 5/16">
+<input id="quizAnswer" placeholder="Answer in %">
+
+<button onclick="checkQuiz()">Check Answer</button>
+
+<div id="quizResult"></div>
+</div>
+
+<script>
+
+let lastPercentage = null;
+
+// ================= SOLVE =================
+async function ask(){
+
+let topic = document.getElementById("topic").value;
+let student = document.getElementById("student").value || "guest";
+
+let res = await fetch("/ask", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({topic, student})
+});
+
+let data = await res.json();
+
+lastPercentage = data.percentage;
+
+let html = "";
+
+// RESULT
+html += `
+<div class="card">
+<h3>📊 Result</h3>
+<b>Decimal:</b> ${data.decimal}<br>
+<b>Percentage:</b> ${data.percentage}%
+</div>
+`;
+
+// TEACHER JUDGMENT
+html += `
+<div class="card">
+<h3>🎯 Teacher View</h3>
+Status: Generated Correctly
+</div>
+`;
+
+// STEPS
+html += `<div class="card"><h3>📊 Steps</h3>`;
+
+data.steps.forEach(s=>{
+    html += `
+    <div class="step ${s.color}">
+        Step ${s.step}: ${s.text}
+    </div>
+    `;
+});
+
+html += `</div>`;
+
+// DIGIT FLOW
+let flow = "0";
+
+data.steps.forEach(s=>{
+    if(s.digit){
+        flow += " → " + s.digit;
+    }
+});
+
+html += `
+<div class="card">
+<h3>📈 Digit Harvest Flow</h3>
+<b>${flow}</b>
+</div>
+`;
+
+document.getElementById("out").innerHTML = html;
+
+}
+
+// ================= QUIZ =================
+async function checkQuiz(){
+
+let topic = document.getElementById("quizTopic").value;
+let answer = document.getElementById("quizAnswer").value;
+
+let res = await fetch("/quiz", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+        topic,
+        answer,
+        student: document.getElementById("student").value || "guest"
+    })
+});
+
+let data = await res.json();
+
+let color = data.correct ? "green" : "red";
+
+document.getElementById("quizResult").innerHTML = `
+<div class="card ${color}">
+<b>${data.correct ? "✅ Correct" : "❌ Wrong"}</b><br>
+Correct Answer: ${data.correct_answer}<br>
+Score: ${data.score}<br>
+Streak: ${data.streak}
+</div>
+`;
+
+}
+
+// ================= RESET =================
+function resetUI(){
+    document.getElementById("out").innerHTML = "";
+    document.getElementById("topic").value = "";
+}
+
+</script>
+
+</body>
+</html>
